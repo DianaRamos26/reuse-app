@@ -1,0 +1,185 @@
+// ============================================================
+// ReUse! - Schema Prisma
+// Marketplace de produtos sustentaveis (parcerias + comissao por venda)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------
+// USER
+// Usuario final do app (tela de Login e gamificacao na Home).
+// Guarda os pontos/nivel exibidos no card "Seus pontos" da Home.
+// ----------------------------------------------------------------
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  avatarUrl    String?
+  points       Int      @default(0)
+  level        Int      @default(1)
+  levelLabel   String   @default("Guardiao do Planeta")
+  provider     AuthProvider @default(EMAIL)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders             Order[]
+  pointsTransactions PointsTransaction[]
+
+  @@map("users")
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  FACEBOOK
+}
+
+// ----------------------------------------------------------------
+// CATEGORY
+// Categorias exibidas na Home (Doacao, Venda, Troca, Todos).
+// ----------------------------------------------------------------
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  icon     String
+  products Product[]
+
+  @@map("categories")
+}
+
+// ----------------------------------------------------------------
+// PARTNER
+// Empresa parceira do ReUse. E quem efetivamente realiza a venda
+// e sobre quem incide a comissao (regra de negocio do app).
+// ----------------------------------------------------------------
+model Partner {
+  id              String    @id @default(cuid())
+  name            String
+  logoUrl         String?
+  commissionRate  Float     @default(0.10) // 10% padrao sobre cada venda
+  verified        Boolean   @default(true) // selo "Parceiro ReUse"
+  products        Product[]
+  orders          Order[]
+
+  @@map("partners")
+}
+
+// ----------------------------------------------------------------
+// PRODUCT
+// Item anunciado por um parceiro (tela Home e Detalhe do Item).
+// ----------------------------------------------------------------
+model Product {
+  id           String        @id @default(cuid())
+  title        String
+  description  String
+  price        Float
+  condition    ProductCondition @default(USED_GOOD)
+  distanceKm   Float?
+  imageUrl     String
+  isPartnerSale Boolean      @default(true) // "Compra com empresa parceira"
+
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id])
+
+  partnerId    String
+  partner      Partner       @relation(fields: [partnerId], references: [id])
+
+  orderItems   OrderItem[]
+  createdAt    DateTime      @default(now())
+
+  @@map("products")
+}
+
+enum ProductCondition {
+  NEW
+  USED_LIKE_NEW
+  USED_GOOD
+  USED_FAIR
+}
+
+// ----------------------------------------------------------------
+// ORDER
+// Pedido gerado na tela "Resumo da compra" / Compra concluida.
+// Guarda subtotal, frete, total, forma de pagamento e status,
+// alem da comissao que o ReUse recebe do parceiro nessa venda.
+// ----------------------------------------------------------------
+model Order {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+
+  partnerId      String
+  partner        Partner      @relation(fields: [partnerId], references: [id])
+
+  items          OrderItem[]
+
+  subtotal       Float
+  shippingFee    Float        @default(0)
+  total          Float
+  commissionValue Float       // total * partner.commissionRate no momento da compra
+
+  paymentMethod  PaymentMethod @default(CREDIT_CARD)
+  status         OrderStatus  @default(CONFIRMED)
+
+  createdAt      DateTime     @default(now())
+
+  @@map("orders")
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  PIX
+  DEBIT_CARD
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+// ----------------------------------------------------------------
+// ORDER ITEM
+// Linha de produto dentro de um pedido (permite múltiplos itens
+// por compra, preservando preco no momento da venda).
+// ----------------------------------------------------------------
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+
+  quantity   Int     @default(1)
+  unitPrice  Float
+
+  @@map("order_items")
+}
+
+// ----------------------------------------------------------------
+// POINTS TRANSACTION
+// Historico de pontos de gamificacao (ex.: +50 pts por compra),
+// usado para alimentar a barra de progresso "Seus pontos" na Home.
+// ----------------------------------------------------------------
+model PointsTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@map("points_transactions")
+}

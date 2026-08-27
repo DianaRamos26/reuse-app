@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Barra de status simulada (9:41) usada no topo de cada tela */
+.status-bar {
+  @apply flex items-center justify-between px-6 pt-3 pb-1 text-xs font-semibold text-brand-plum;
+}
+
+/* Botao primario reutilizado nas 5 telas (Entrar, Comprar produto, Confirmar compra) */
+.btn-primary {
+  @apply w-full bg-brand-pink text-white font-semibold py-3.5 rounded-2xl shadow-button
+    active:scale-[0.98] transition-transform text-[15px];
+}
+
+.btn-outline {
+  @apply w-full border border-brand-plum/15 bg-white text-brand-plum font-medium py-3 rounded-2xl
+    flex items-center justify-center gap-2 active:scale-[0.98] transition-transform text-sm;
+}
+
+.card {
+  @apply bg-white rounded-3xl shadow-card;
+}
