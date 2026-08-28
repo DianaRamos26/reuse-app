@@ -52,8 +52,3 @@ O schema completo está em `prisma/schema.prisma`. Os models `User`,
 e sustentam o modelo de monetização (comissão do parceiro calculada
 em `app/api/orders/route.ts`).
 
-## Imagens
-
-As imagens de produto usadas no seed (`/public/images/*.jpg`) são
-placeholders — substitua pelos arquivos reais (cadeira, bicicleta,
-planta) ou por URLs de um serviço de imagens antes da entrega final.
